@@ -791,7 +791,7 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
     </div>
   ) : (
     <div className="p-4 text-center">
-      <h2 className="text-2xl font-bold mb-4">No Data Available</h2>
+      <h2 className="text-2xl font-bold mb-4">No Data Available!</h2>
       <p>Please upload an Excel file to generate the Letter of Appointment.</p>
     </div>
   );
