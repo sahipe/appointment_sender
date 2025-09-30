@@ -16,13 +16,29 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
 // Configure Nodemailer transporter
+// const transporter = nodemailer.createTransport({
+//   host: "smtp.gmail.com", // replace with your SMTP server
+//   port: 587,
+//   secure: false,
+//   auth: {
+//     user: "sahipe11@gmail.com",
+//     pass: "xgofkntyyjnnaowj",
+//   },
+// });
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com", // replace with your SMTP server
+  host: "smtp.rediffmailpro.com", // replace with your SMTP server
   port: 587,
   secure: false,
+  name: "spekctrum.com",
   auth: {
-    user: "sahipe11@gmail.com",
-    pass: "xgofkntyyjnnaowj",
+    user: "hrops@spekctrum.com",
+    pass: "Hrops@1234",
+  },
+  logger: true,
+  debug: true,
+  tls: {
+    // do not fail on invalid certs (use only if you see cert errors in dev)
+    rejectUnauthorized: false,
   },
 });
 
@@ -44,7 +60,8 @@ app.post("/upload-letters", async (req, res) => {
     // Map each letter to a promise
     const results = await Promise.allSettled(
       letters.map(async (letter) => {
-        const { pdfName, pdfBase64, email } = letter;
+        const { pdfName, pdfBase64, email, name, designation, company } =
+          letter;
         const filePath = path.join(dirPath, pdfName);
 
         // Save PDF
@@ -55,39 +72,46 @@ app.post("/upload-letters", async (req, res) => {
         const logoAttachments = [
           {
             filename: "beemalogo.png",
-            path: path.join(__dirname, "public/beemalogo.png"),
+            path: path.join(__dirname, "public/1.png"),
             cid: "logo1",
           },
           {
             filename: "sahipe.png",
-            path: path.join(__dirname, "public/sahipe.png"),
+            path: path.join(__dirname, "public/2.png"),
             cid: "logo2",
           },
           {
             filename: "udhary.png",
-            path: path.join(__dirname, "public/udhary.png"),
+            path: path.join(__dirname, "public/3.png"),
             cid: "logo3",
           },
           {
             filename: "investesy.jpg",
-            path: path.join(__dirname, "public/investesy.jpg"),
+            path: path.join(__dirname, "public/4.png"),
             cid: "logo4",
           },
         ];
+
+        // ✅ Debug missing files
+        logoAttachments.forEach((a) => {
+          if (!fs.existsSync(a.path)) {
+            console.error(`⚠️ Logo file missing: ${a.path}`);
+          }
+        });
         // Send email
         await transporter.sendMail({
-          from: '"HR Team" <sahipe11@gmail.com>',
+          from: '"HR Team" <hrops@spekctrum.com>',
           to: email,
           subject: "Your Appointment Letter",
           html: `
     <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5; background-color: #f5f5f5; ;">
       <div style="max-width: 800px; margin: 0 auto; background-color: #fff; padding: 30px; border-radius: 8px;">
-        <p>Dear abc</p>
+        <p>Dear ${name},</p>
 
         <p>
           We are pleased to inform you that you have been selected for the
-          <strong>abc</strong> at
-          <strong>abc</strong>.
+          <strong>${designation}</strong> at
+          <strong>${company}</strong>.
           Please find your <strong>Appointment Letter</strong> attached to this email.
         </p>
 
@@ -111,17 +135,20 @@ app.post("/upload-letters", async (req, res) => {
         </div>
 
         <div style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
-          <img src="cid:logo1" alt="Logo1" style="height:40px;width:120px;object-fit:contain;" />
-          <img src="cid:logo2" alt="Logo2" style="height:40px;width:120px;object-fit:contain;" />
-          <img src="cid:logo3" alt="Logo3" style="height:40px;width:120px;object-fit:contain;" />
-          <img src="cid:logo4" alt="Logo4" style="height:40px;width:120px;object-fit:contain;" />
+                <img src="cid:logo1" height="40" style="margin-right:10px"/>
+                <img src="cid:logo2" height="40" style="margin-right:10px"/>
+                <img src="cid:logo3" height="40" style="margin-right:10px"/>
+                <img src="cid:logo4" height="40"/>
         </div>
       </div>
     </div>
   `,
           attachments: [
-            ...logoAttachments,
-            { filename: pdfName, path: filePath }, // the PDF
+            ...logoAttachments, // ✅ include logos
+            {
+              filename: pdfName,
+              path: filePath,
+            },
           ],
         });
 

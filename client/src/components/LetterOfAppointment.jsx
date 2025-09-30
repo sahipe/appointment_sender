@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import axios from "axios";
+import Annexure from "./Annexure";
 
 const LetterOfAppointment = ({ dataFromExcel }) => {
   const contentRef = useRef();
@@ -67,7 +68,10 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
           "_"
         )}_Letter_Of_Appointment.pdf`,
         pdfBase64,
-        email: employee.email, // make sure your Excel has an email field
+        email: employee.email,
+        name: employee.name,
+        designation: employee.designation,
+        company: employee.company,
       });
     }
 
@@ -77,6 +81,11 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
         "http://localhost:5000/upload-letters",
         {
           letters: lettersToSend,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
 
@@ -98,7 +107,7 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
         disabled={loading}
         className="mb-6 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
       >
-        {loading ? "Generating PDF..." : "Download PDF"}
+        {loading ? "Sending..." : "send Letters to all Employees"}
       </button>
 
       {/* ✅ wrapper with ref contains all employees */}
@@ -783,6 +792,15 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
                     U66000DL2021PTC380280), IRDAI Registration No. 809
                   </p>
                 </div>
+              </div>
+              {/*=================================== page-4 ===================================*/}
+              <div className="page  p-5 ">
+                <Annexure
+                  name={item.name}
+                  joiningDate={item.date}
+                  designation={item.designation}
+                  grossSalary={item.grossSalary}
+                />
               </div>
             </div>
           </div>
