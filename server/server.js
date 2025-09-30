@@ -16,7 +16,7 @@ const app = express();
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(
   cors({
-    origin: "*", // or specific domain
+    origin: ["https://appoinment-letter-sender.netlify.app/", "*"],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   })
 );
