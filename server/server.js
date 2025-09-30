@@ -34,13 +34,13 @@ app.use(express.static(path.join(__dirname, "public")));
 //   },
 // });
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST, // replace with your SMTP server
+  host: "smtp.rediffmailpro.com", // replace with your SMTP server
   port: 587,
   secure: false,
   name: "spekctrum.com",
   auth: {
-    user: process.env.EMAIL_USERNAME,
-    pass: process.env.EMAIL_PASSWORD,
+    user: "hrops@spekctrum.com",
+    pass: "Hrops@1234",
   },
   logger: true,
   debug: true,
