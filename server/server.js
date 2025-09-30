@@ -5,6 +5,8 @@ import path from "path";
 import nodemailer from "nodemailer";
 import { fileURLToPath } from "url";
 import cors from "cors";
+import dotenv from "dotenv";
+dotenv.config();
 
 // ESM __dirname replacement
 const __filename = fileURLToPath(import.meta.url);
@@ -26,16 +28,16 @@ app.use(express.static(path.join(__dirname, "public")));
 //   },
 // });
 const transporter = nodemailer.createTransport({
-  host: "smtp.rediffmailpro.com", // replace with your SMTP server
+  host: process.env.EMAIL_HOST, // replace with your SMTP server
   port: 587,
   secure: false,
   name: "spekctrum.com",
   auth: {
-    user: "hrops@spekctrum.com",
-    pass: "Hrops@1234",
+    user: process.env.EMAIL_USERNAME,
+    pass: process.env.EMAIL_PASSWORD,
   },
-  logger: true,
-  debug: true,
+  // logger: true,
+  // debug: true,
   tls: {
     // do not fail on invalid certs (use only if you see cert errors in dev)
     rejectUnauthorized: false,
