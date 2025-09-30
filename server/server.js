@@ -16,9 +16,11 @@ const app = express();
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(
   cors({
-    origin: "https://appoinment-letter-sender.netlify.app/",
+    origin: "*", // or specific domain
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   })
 );
+
 app.use(express.static(path.join(__dirname, "public")));
 
 // Configure Nodemailer transporter
