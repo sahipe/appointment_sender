@@ -78,7 +78,7 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
     // Send all letters to backend
     try {
       const response = await axios.post(
-        "https://appointment-sender.onrender.com/upload-letters",
+        "http://localhost:5000/upload-letters",
         {
           letters: lettersToSend,
         },

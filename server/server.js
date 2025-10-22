@@ -120,7 +120,7 @@ app.post("/upload-letters", async (req, res) => {
 
                 <p>Best regards,<br><strong>Jyoti</strong><br>HR Manager</p>
                 <p><strong>PH:</strong> +91 76699 93101 | 
-                   <strong>Email:</strong> hr@spektrum.com</p>
+                   <strong>Email:</strong> hr@spekctrum.com</p>
                 <p>Unit No. 502, 5th Floor, Time House, Plot No. 5, Wazirpur, Delhi - 110052</p>
                 <div style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
                   <img src="cid:logo1" height="40"/>
