@@ -1,0 +1,79 @@
+name: Deploy Appointment Sender
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # ========================================
+  # 🏗️ BUILD STAGE
+  # ========================================
+  build:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      # 🧩 Build Backend Image
+      - name: Build Backend Image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/appointment-backend:latest ./server
+
+      - name: Push Backend Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/appointment-backend:latest
+
+      # 🧩 Build Frontend Image
+      - name: Build Frontend Image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/appointment-frontend:latest ./client
+
+      - name: Push Frontend Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/appointment-frontend:latest
+
+  # ========================================
+  # 🚀 DEPLOY STAGE
+  # ========================================
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: self-hosted
+
+    steps:
+      - name: Stop existing containers
+        run: |
+          docker rm -f appointment_backend || true
+          docker rm -f appointment_frontend || true
+
+      - name: Remove old images
+        run: |
+          docker rmi -f ${{ secrets.DOCKER_USERNAME }}/appointment-backend:latest || true
+          docker rmi -f ${{ secrets.DOCKER_USERNAME }}/appointment-frontend:latest || true
+
+      - name: Pull latest images from Docker Hub
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/appointment-backend:latest
+          docker pull ${{ secrets.DOCKER_USERNAME }}/appointment-frontend:latest
+
+      - name: Run Backend Container
+        run: |
+          docker run -d \
+            --name appointment_backend \
+            -p 5001:5001 \
+            
+            
+            -e EMAIL_USER='${{ secrets.EMAIL_USER }}' \
+            -e EMAIL_PASS='${{ secrets.EMAIL_PASS }}' \
+            
+            ${{ secrets.DOCKER_USERNAME }}/appointment-backend:latest
+
+      - name: Run Frontend Container
+        run: |
+          docker run -d \
+            --name appointment_frontend \
+            -p 3001:3001 \
+            
+            -e VITE_API_BASE_URL=http://localhost:5001 \
+            ${{ secrets.DOCKER_USERNAME }}/appointment-frontend:latest

@@ -163,5 +163,5 @@ app.get("/health-check", (req, res) => {
   res.json({ status: "ok", message: "Server is running" });
 });
 
-const PORT = 5000;
+const PORT = 5001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
