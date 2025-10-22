@@ -7,16 +7,15 @@ import Annexure from "./Annexure";
 const LetterOfAppointment = ({ dataFromExcel }) => {
   const contentRef = useRef();
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [progressLogs, setProgressLogs] = useState([]);
 
-  const handleDownload = async () => {
-    setLoading(true);
-
+  // ✅ Shared function to generate PDFs (returns an array of {pdfName, pdfBase64, ...})
+  const generateLetters = async () => {
     const lettersToSend = [];
 
     for (let empIndex = 0; empIndex < dataFromExcel.length; empIndex++) {
       const employee = dataFromExcel[empIndex];
-
-      // Find employee container
       const empElement = document.getElementById(`employee-${empIndex}`);
       if (!empElement) continue;
 
@@ -59,14 +58,14 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
         );
       }
 
-      // Convert PDF to Base64
       const pdfBase64 = pdf.output("datauristring").split(",")[1];
+      const pdfName = `${employee.name.replace(
+        /\s+/g,
+        "_"
+      )}_Letter_Of_Appointment.pdf`;
 
       lettersToSend.push({
-        pdfName: `${employee.name.replace(
-          /\s+/g,
-          "_"
-        )}_Letter_Of_Appointment.pdf`,
+        pdfName,
         pdfBase64,
         email: employee.email,
         name: employee.name,
@@ -75,40 +74,109 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
       });
     }
 
-    // Send all letters to backend
+    return lettersToSend;
+  };
+
+  // ✅ Button 1: Download all letters locally
+  const handleDownloadAll = async () => {
+    setDownloading(true);
     try {
-      const response = await axios.post(
-        "http://72.60.103.3:5001/upload-letters",
-        {
-          letters: lettersToSend,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      const letters = await generateLetters();
+
+      // Download all generated PDFs locally
+      letters.forEach((letter) => {
+        const link = document.createElement("a");
+        link.href = `data:application/pdf;base64,${letter.pdfBase64}`;
+        link.download = letter.pdfName;
+        link.click();
+      });
+
+      alert("All appointment letters downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading letters:", error);
+      alert("Failed to download letters.");
+    }
+    setDownloading(false);
+  };
+
+  // ✅ Button 2: Send all letters to backend
+  const handleSendAll = async () => {
+    setLoading(true);
+    setProgressLogs([]); // optional state to display updates on screen
+
+    try {
+      const lettersToSend = await generateLetters();
+
+      // Start the streaming connection
+      const eventSource = new EventSource(
+        "http://72.60.103.3:5001/upload-letters"
       );
 
-      console.log("Backend response:", response.data);
-      alert("All letters sent successfully!");
-    } catch (err) {
-      console.error("Error sending letters:", err);
-      alert("Failed to send letters. Check console for details.");
-    }
+      // When a message is received from backend
+      eventSource.onmessage = (event) => {
+        console.log("Progress:", event.data);
+        setProgressLogs((prev) => [...prev, event.data]);
+      };
 
-    setLoading(false);
+      // When the stream ends
+      eventSource.addEventListener("end", () => {
+        console.log("✅ All emails processed.");
+        setProgressLogs((prev) => [...prev, "✅ All emails processed."]);
+        eventSource.close();
+        setLoading(false);
+      });
+
+      // Handle error
+      eventSource.onerror = (err) => {
+        console.error("❌ EventSource failed:", err);
+        setProgressLogs((prev) => [
+          ...prev,
+          "❌ Connection lost or error occurred.",
+        ]);
+        eventSource.close();
+        setLoading(false);
+      };
+
+      // Send letters payload separately (since SSE is GET-only)
+      await axios.post(
+        "http://72.60.103.3:5001/upload-letters",
+        { letters: lettersToSend },
+        { headers: { "Content-Type": "application/json" } }
+      );
+    } catch (err) {
+      console.error("❌ Error sending letters:", err);
+      alert("Failed to send letters. Check console for details.");
+      setLoading(false);
+    }
   };
 
   return dataFromExcel && dataFromExcel.length > 0 ? (
     <div className="flex flex-col items-center">
-      {/* ✅ download button outside the map */}
-      <button
-        onClick={handleDownload}
-        disabled={loading}
-        className="mb-6 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? "Sending..." : "send Letters to all Employees"}
-      </button>
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={handleDownloadAll}
+          disabled={downloading}
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+        >
+          {downloading ? "Downloading..." : "Download All Appointment Letters"}
+        </button>
+
+        <button
+          onClick={handleSendAll}
+          disabled={loading}
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? "Sending..." : "Send Letters to All Employees"}
+        </button>
+      </div>
+
+      <div className="mt-4 w-full max-w-3xl bg-gray-100 p-4 rounded-lg shadow-inner overflow-y-auto h-60">
+        {progressLogs.map((log, index) => (
+          <p key={index} className="text-sm text-gray-800">
+            {log}
+          </p>
+        ))}
+      </div>
 
       {/* ✅ wrapper with ref contains all employees */}
       <div ref={contentRef} className="w-full">
