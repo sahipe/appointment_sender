@@ -8,7 +8,6 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
   const contentRef = useRef();
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [progressLogs, setProgressLogs] = useState([]);
 
   // ✅ Shared function to generate PDFs (returns an array of {pdfName, pdfBase64, ...})
   const generateLetters = async () => {
@@ -102,52 +101,22 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
   // ✅ Button 2: Send all letters to backend
   const handleSendAll = async () => {
     setLoading(true);
-    setProgressLogs([]); // optional state to display updates on screen
-
     try {
       const lettersToSend = await generateLetters();
 
-      // Start the streaming connection
-      const eventSource = new EventSource(
-        "http://72.60.103.3:5001/upload-letters"
-      );
-
-      // When a message is received from backend
-      eventSource.onmessage = (event) => {
-        console.log("Progress:", event.data);
-        setProgressLogs((prev) => [...prev, event.data]);
-      };
-
-      // When the stream ends
-      eventSource.addEventListener("end", () => {
-        console.log("✅ All emails processed.");
-        setProgressLogs((prev) => [...prev, "✅ All emails processed."]);
-        eventSource.close();
-        setLoading(false);
-      });
-
-      // Handle error
-      eventSource.onerror = (err) => {
-        console.error("❌ EventSource failed:", err);
-        setProgressLogs((prev) => [
-          ...prev,
-          "❌ Connection lost or error occurred.",
-        ]);
-        eventSource.close();
-        setLoading(false);
-      };
-
-      // Send letters payload separately (since SSE is GET-only)
-      await axios.post(
+      const response = await axios.post(
         "http://72.60.103.3:5001/upload-letters",
         { letters: lettersToSend },
         { headers: { "Content-Type": "application/json" } }
       );
+
+      console.log("Backend response:", response.data);
+      alert("All letters sent successfully!");
     } catch (err) {
-      console.error("❌ Error sending letters:", err);
+      console.error("Error sending letters:", err);
       alert("Failed to send letters. Check console for details.");
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   return dataFromExcel && dataFromExcel.length > 0 ? (
@@ -168,14 +137,6 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
         >
           {loading ? "Sending..." : "Send Letters to All Employees"}
         </button>
-      </div>
-
-      <div className="mt-4 w-full max-w-3xl bg-gray-100 p-4 rounded-lg shadow-inner overflow-y-auto h-60">
-        {progressLogs.map((log, index) => (
-          <p key={index} className="text-sm text-gray-800">
-            {log}
-          </p>
-        ))}
       </div>
 
       {/* ✅ wrapper with ref contains all employees */}

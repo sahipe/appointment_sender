@@ -47,19 +47,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // ✅ Main endpoint
 app.post("/upload-letters", async (req, res) => {
   try {
-    const { letters } = req.body;
+    const { letters } = req.body; // [{ pdfName, pdfBase64, email, name, ... }]
     if (!letters || !letters.length) {
       return res.status(400).json({ error: "No letters provided" });
     }
-
-    // ✅ Setup SSE response
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    const sendProgress = (message) => {
-      res.write(`data: ${message}\n\n`);
-    };
 
     const today = new Date().toISOString().split("T")[0];
     const dirPath = path.join(__dirname, "letters", today);
@@ -68,20 +59,23 @@ app.post("/upload-letters", async (req, res) => {
     const success = [];
     const failed = [];
 
-    sendProgress(
-      `📩 Starting to send ${letters.length} appointment letters...`
-    );
+    console.log(`📩 Starting to send ${letters.length} appointment letters...`);
 
     for (const [index, letter] of letters.entries()) {
       const { pdfName, pdfBase64, email, name, designation, company } = letter;
 
-      sendProgress(`📨 Preparing ${pdfName} for ${name} (${email})`);
+      console.log(
+        `📨 [${index + 1}/${
+          letters.length
+        }] Preparing email for ${name} (${email})`
+      );
 
       try {
         const filePath = path.join(dirPath, pdfName);
         const pdfBuffer = Buffer.from(pdfBase64, "base64");
         await fs.writeFile(filePath, pdfBuffer);
 
+        // Inline logos
         const logoAttachments = [
           {
             filename: "beemalogo.png",
@@ -105,6 +99,7 @@ app.post("/upload-letters", async (req, res) => {
           },
         ];
 
+        // Send email
         await transporter.sendMail({
           from: '"HR Team" <hrops@spekctrum.com>',
           to: email,
@@ -116,7 +111,20 @@ app.post("/upload-letters", async (req, res) => {
                 <p>We are pleased to inform you that you have been selected for the
                 <strong>${designation}</strong> at <strong>${company}</strong>.
                 Please find your <strong>Appointment Letter</strong> attached.</p>
+
+                <p>If you have any questions, feel free to reach out to us.
+                Kindly sign and return a scanned copy of the letter as acceptance.</p>
+
                 <p>Best regards,<br><strong>Jyoti</strong><br>HR Manager</p>
+                <p><strong>PH:</strong> +91 76699 93101 | 
+                   <strong>Email:</strong> hr@spekctrum.com</p>
+                <p>Unit No. 502, 5th Floor, Time House, Plot No-5, Wazirpur, Delhi - 110052</p>
+                <div style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
+                  <img src="cid:logo1" height="40"/>
+                  <img src="cid:logo2" height="40"/>
+                  <img src="cid:logo3" height="40"/>
+                  <img src="cid:logo4" height="40"/>
+                </div>
               </div>
             </div>
           `,
@@ -126,21 +134,21 @@ app.post("/upload-letters", async (req, res) => {
           ],
         });
 
-        sendProgress(`✅ ${pdfName} sent successfully`);
+        console.log(`✅ Email sent successfully to ${email}`);
         success.push(email);
       } catch (err) {
-        sendProgress(`❌ Failed to send ${pdfName}: ${err.message}`);
+        console.error(`❌ Failed to send to ${email}:`, err.message);
         failed.push(email);
       }
 
+      // Add a small delay (e.g., 1 second between sends)
       await sleep(1000);
     }
 
-    sendProgress(
-      `✅ Completed. Success: ${success.length}, Failed: ${failed.length}`
+    console.log(
+      `✅ Sending completed. Success: ${success.length}, Failed: ${failed.length}`
     );
-    res.write("event: end\ndata: done\n\n");
-    res.end();
+    res.json({ message: "Email sending completed", success, failed });
   } catch (error) {
     console.error("❌ Fatal server error:", error);
     res.status(500).json({ error: "Something went wrong" });
