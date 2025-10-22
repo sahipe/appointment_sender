@@ -8,6 +8,7 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
   const contentRef = useRef();
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [result, setResult] = useState(null);
 
   // ✅ Shared function to generate PDFs (returns an array of {pdfName, pdfBase64, ...})
   const generateLetters = async () => {
@@ -101,6 +102,8 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
   // ✅ Button 2: Send all letters to backend
   const handleSendAll = async () => {
     setLoading(true);
+    setResult(null); // clear previous results
+
     try {
       const lettersToSend = await generateLetters();
 
@@ -111,11 +114,17 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
       );
 
       console.log("Backend response:", response.data);
-      alert("All letters sent successfully!");
+      setResult(response.data);
     } catch (err) {
       console.error("Error sending letters:", err);
-      alert("Failed to send letters. Check console for details.");
+      setResult({
+        message: "Failed to send letters. Please check console for details.",
+        success: [],
+        failed: [],
+        error: true,
+      });
     }
+
     setLoading(false);
   };
 
@@ -138,6 +147,55 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
           {loading ? "Sending..." : "Send Letters to All Employees"}
         </button>
       </div>
+
+      {/* ✅ Show email sending summary */}
+      {result && (
+        <div className="mt-6 w-full max-w-3xl bg-white shadow-md rounded-lg p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            {result.error
+              ? "❌ Email Sending Failed"
+              : "📬 Email Sending Summary"}
+          </h3>
+
+          <p className="text-gray-700 mb-2">{result.message}</p>
+
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+            {/* Success List */}
+            <div className="flex-1">
+              <h4 className="font-medium text-green-600 mb-2">
+                ✅ Sent Successfully ({result.success?.length || 0})
+              </h4>
+              {result.success?.length > 0 ? (
+                <ul className="list-disc list-inside text-gray-700 text-sm space-y-1 max-h-32 overflow-y-auto">
+                  {result.success.map((email, idx) => (
+                    <li key={idx}>{email}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No successful deliveries.
+                </p>
+              )}
+            </div>
+
+            {/* Failed List */}
+            <div className="flex-1">
+              <h4 className="font-medium text-red-600 mb-2">
+                ❌ Failed ({result.failed?.length || 0})
+              </h4>
+              {result.failed?.length > 0 ? (
+                <ul className="list-disc list-inside text-gray-700 text-sm space-y-1 max-h-32 overflow-y-auto">
+                  {result.failed.map((email, idx) => (
+                    <li key={idx}>{email}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 text-sm">No failed deliveries 🎉</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ✅ wrapper with ref contains all employees */}
       <div ref={contentRef} className="w-full">
