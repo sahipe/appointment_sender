@@ -62,11 +62,8 @@ jobs:
           docker run -d \
             --name appointment_backend \
             -p 5001:5001 \
-            
-            
             -e EMAIL_USER='${{ secrets.EMAIL_USER }}' \
             -e EMAIL_PASS='${{ secrets.EMAIL_PASS }}' \
-            
             ${{ secrets.DOCKER_USERNAME }}/appointment-backend:latest
 
       - name: Run Frontend Container
@@ -74,6 +71,5 @@ jobs:
           docker run -d \
             --name appointment_frontend \
             -p 3001:3001 \
-            
             -e VITE_API_BASE_URL=http://localhost:5001 \
             ${{ secrets.DOCKER_USERNAME }}/appointment-frontend:latest
