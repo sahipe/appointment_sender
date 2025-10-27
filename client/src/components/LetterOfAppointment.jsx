@@ -836,6 +836,7 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
                     </li>
                   </ol>
                 </div>
+                
                 <div className="mt-20 flex justify-between items-center">
                   <div>
                     <p>
@@ -843,9 +844,21 @@ const LetterOfAppointment = ({ dataFromExcel }) => {
                     </p>
                     <p>Signature of employee</p>
                   </div>
-                  <div className="flex items-baseline justify-baseline">
+    <div className="absolute w-full h-[100px] mt-16">
+  <img
+    src="/Signature.png"
+    alt="beemaaa logo"
+    className="absolute left-325 bottom-0  w-[100px]"
+  />
+</div>
+
+
+ 
+
+                    <div className="flex items-end justify-end">
                     <p>Signature of HR Manager / Executive</p>
                   </div>
+                             
                 </div>
                 {/* footer */}
                 <div className="flex flex-col mt-10 justify-center items-center">
